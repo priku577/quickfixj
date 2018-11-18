@@ -1,0 +1,16 @@
+I had to install jdk 1.8 and make it the default Java in the system
+Modified JAVA_HOME env variable to point to jdk 8.
+TO work around the maven problem I had to add the _JAVA_OPTIONS to a certain value.
+Then mvn can build the quickfixj projects.
+
+To execute the example project Banzai  from the command line, one can use the following command
+Go to repo/quickfixj/quickfixj-examples/banzai/target
+java -cp quickfixj-examples-banzai-2.2.0-SNAPSHOT-standalone.jar quickfix.examples.banzai.Banzai
+
+TO use Banzai one should also execute the Executor project wihc can be done in the similar way
+Go to repo/quickfixj/quickfixj-examples/executor/target
+java -cp quickfixj-examples-executor-2.2.0-SNAPSHOT-standalone.jar quickfix.examples.executor.Executor
+
+The general command to execute any jar could be
+go to the target directory
+java -cp <xxxx-yyyy-zzzz-SNAPSHOT-standalone.jar> <Full package name of the Java class witht he main method>
