@@ -21,29 +21,17 @@ package quickfix.examples.banzai;
 
 //package org.quickfixj.jmx.mbean.session;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.concurrent.CountDownLatch;
-
-import javax.swing.JFrame;
-import javax.swing.UIManager;
-
 import org.quickfixj.jmx.JmxExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import quickfix.DefaultMessageFactory;
-import quickfix.FileStoreFactory;
-import quickfix.Initiator;
-import quickfix.LogFactory;
-import quickfix.MessageFactory;
-import quickfix.MessageStoreFactory;
-import quickfix.ScreenLogFactory;
-import quickfix.Session;
-import quickfix.SessionID;
-import quickfix.SessionSettings;
-import quickfix.SocketInitiator;
+import quickfix.*;
+import quickfix.examples.banzai.restapi.App;
 import quickfix.examples.banzai.ui.BanzaiFrame;
+
+import javax.swing.*;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Entry point for the Banzai application.
@@ -88,6 +76,8 @@ public class Banzai {
 
         frame = new BanzaiFrame(orderTableModel, executionTableModel, application);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        App.start(application);
     }
 
     public synchronized void logon() {
@@ -125,6 +115,7 @@ public class Banzai {
 
     public static void main(String[] args) throws Exception {
         try {
+
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             log.info(e.getMessage(), e);
