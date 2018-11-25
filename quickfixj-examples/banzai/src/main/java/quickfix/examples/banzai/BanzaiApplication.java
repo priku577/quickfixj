@@ -19,6 +19,8 @@
 
 package quickfix.examples.banzai;
 
+import quickfix.field.Username;
+import quickfix.field.Password;
 import quickfix.Application;
 import quickfix.DefaultMessageFactory;
 import quickfix.DoNotSend;
@@ -102,7 +104,18 @@ public class BanzaiApplication implements Application {
         observableLogon.logoff(sessionID);
     }
 
-    public void toAdmin(quickfix.Message message, SessionID sessionID) {
+    public void toAdmin(quickfix.Message message, SessionID sessionID){
+
+        final Message.Header header = message.getHeader();
+
+        try {
+            if (header.getString(MsgType.FIELD).equals( MsgType.LOGON ) ) {
+                message.setField(new Username("george") );
+                message.setField(new Password("chiramel" ));
+            }
+        } catch (FieldNotFound fieldNotFound) {
+            fieldNotFound.printStackTrace();
+        }
     }
 
     public void toApp(quickfix.Message message, SessionID sessionID) throws DoNotSend {
