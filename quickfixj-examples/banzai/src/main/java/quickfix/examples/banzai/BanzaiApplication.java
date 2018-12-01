@@ -19,50 +19,8 @@
 
 package quickfix.examples.banzai;
 
-import quickfix.Application;
-import quickfix.DefaultMessageFactory;
-import quickfix.DoNotSend;
-import quickfix.FieldNotFound;
-import quickfix.FixVersions;
-import quickfix.IncorrectDataFormat;
-import quickfix.IncorrectTagValue;
-import quickfix.Message;
-import quickfix.RejectLogon;
-import quickfix.Session;
-import quickfix.SessionID;
-import quickfix.SessionNotFound;
-import quickfix.UnsupportedMessageType;
-import quickfix.field.AvgPx;
-import quickfix.field.BeginString;
-import quickfix.field.BusinessRejectReason;
-import quickfix.field.ClOrdID;
-import quickfix.field.CumQty;
-import quickfix.field.CxlType;
-import quickfix.field.DeliverToCompID;
-import quickfix.field.ExecID;
-import quickfix.field.HandlInst;
-import quickfix.field.LastPx;
-import quickfix.field.LastShares;
-import quickfix.field.LeavesQty;
-import quickfix.field.LocateReqd;
-import quickfix.field.MsgSeqNum;
-import quickfix.field.MsgType;
-import quickfix.field.OrdStatus;
-import quickfix.field.OrdType;
-import quickfix.field.OrderQty;
-import quickfix.field.OrigClOrdID;
-import quickfix.field.Price;
-import quickfix.field.RefMsgType;
-import quickfix.field.RefSeqNum;
-import quickfix.field.SenderCompID;
-import quickfix.field.SessionRejectReason;
-import quickfix.field.Side;
-import quickfix.field.StopPx;
-import quickfix.field.Symbol;
-import quickfix.field.TargetCompID;
-import quickfix.field.Text;
-import quickfix.field.TimeInForce;
-import quickfix.field.TransactTime;
+import quickfix.*;
+import quickfix.field.*;
 
 import javax.swing.*;
 import java.math.BigDecimal;
@@ -377,6 +335,26 @@ public class BanzaiApplication implements Application {
         newOrderSingle.set(new Symbol(order.getSymbol()));
         newOrderSingle.set(new HandlInst('1'));
         send(populateOrder(order, newOrderSingle), order.getSessionID());
+    }
+
+    public void sendQuoteReq(SessionID sessionId) {
+
+
+        quickfix.fix43.QuoteRequest quoteReq = new quickfix.fix43.QuoteRequest(new quickfix.field.QuoteReqID("12345"));
+
+       // quoteReq.set(new quickfix.field.NoRelatedSym(1));
+
+        quickfix.fix43.QuoteRequest.NoRelatedSym noRelatedSym = new quickfix.fix43.QuoteRequest.NoRelatedSym();
+        noRelatedSym.set(new Symbol("EUR/USD"));
+        noRelatedSym.set(new OrderQty(1000));
+       // noRelatedSym.set(new Currency("EUR"));
+
+        quoteReq.addGroup(noRelatedSym);
+
+
+
+
+        send(quoteReq, sessionId);
     }
 
     public quickfix.Message populateOrder(Order order, quickfix.Message newOrderSingle) {

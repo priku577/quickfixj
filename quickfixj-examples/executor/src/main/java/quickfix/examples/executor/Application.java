@@ -52,6 +52,7 @@ import quickfix.field.OrdStatus;
 import quickfix.field.OrdType;
 import quickfix.field.OrderID;
 import quickfix.field.OrderQty;
+import quickfix.field.OrderQty2;
 import quickfix.field.Price;
 import quickfix.field.Side;
 import quickfix.field.Symbol;
@@ -161,6 +162,33 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
         } catch (RuntimeException e) {
             LogUtil.logThrowable(sessionID, e.getMessage(), e);
         }
+    }
+
+
+
+    /*@Handler
+    public void myQuoteRequestHandler(quickfix.fix43.QuoteRequest quoteRequest, SessionID sessionID) {
+        System.out.println("handler reveived quoteRequest");
+    }*/
+
+
+
+    // By convention (notice different version of FIX. It's an error to have two handlers for the same message)
+    // Convention is "onMessage" method with message object as first argument and SessionID as second argument
+    public void onMessage(quickfix.fix43.QuoteRequest quoteRequest, SessionID sessionID) {
+        System.out.println("executor onMessage quoteRequest");
+
+        quickfix.fix43.Quote quote = new quickfix.fix43.Quote(new quickfix.field.QuoteID("30086:0:0:1:6_30086:0:1:1:7_5"));
+        try {
+            quote.set(quoteRequest.getQuoteReqID());
+            quote.set(new quickfix.field.Account("Aphelion Ext Acc EUR"));
+            quote.set(new quickfix.field.Symbol("EUR/USD"));
+            quote.set(new OrderQty2(100));
+        } catch (FieldNotFound fieldNotFound) {
+            fieldNotFound.printStackTrace();
+        }
+
+        sendMessage(sessionID,quote);
     }
 
     private boolean isOrderExecutable(Message order, Price price) throws FieldNotFound {

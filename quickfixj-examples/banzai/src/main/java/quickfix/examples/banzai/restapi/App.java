@@ -24,7 +24,10 @@ public class App
             Order order = getOrder();
 
             System.out.println(" get uurs ");
-            application.send(order);
+            //application.send(order);
+            application.sendQuoteReq(new SessionID("FIX.4.3", "BANZAI", "",
+                    "", "EXEC", "",
+                    "", ""));
 
             return "Hello uurs World!";
         });
