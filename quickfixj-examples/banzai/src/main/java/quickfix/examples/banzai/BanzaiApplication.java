@@ -22,14 +22,13 @@ package quickfix.examples.banzai;
 import quickfix.*;
 import quickfix.field.*;
 
-import javax.swing.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Observable;
 import java.util.Observer;
 
-public class BanzaiApplication implements Application {
+public class BanzaiApplication extends quickfix.MessageCracker implements Application {
     private final DefaultMessageFactory messageFactory = new DefaultMessageFactory();
     private OrderTableModel orderTableModel = null;
     private ExecutionTableModel executionTableModel = null;
@@ -73,9 +72,14 @@ public class BanzaiApplication implements Application {
     public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound,
             IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         try {
-            SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
+            //SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
+            crack(message, sessionID);
         } catch (Exception e) {
         }
+    }
+
+    public void onMessage(quickfix.fix43.Quote quote, SessionID sessionID) {
+        System.out.println("onMessage Quote");
     }
 
     public class MessageProcessor implements Runnable {
