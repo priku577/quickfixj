@@ -176,7 +176,8 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
     // By convention (notice different version of FIX. It's an error to have two handlers for the same message)
     // Convention is "onMessage" method with message object as first argument and SessionID as second argument
     public void onMessage(quickfix.fix43.QuoteRequest quoteRequest, SessionID sessionID) {
-        System.out.println("executor onMessage quoteRequest");
+        System.out.println("RESTMsgQueueReader -> ExecutorApplication (Incoming) " +
+                "quickfix QuoteRequest \n" + quoteRequest);
 
         quickfix.fix43.Quote quote = new quickfix.fix43.Quote(new quickfix.field.QuoteID("30086:0:0:1:6_30086:0:1:1:7_5"));
         try {
@@ -187,8 +188,11 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
         } catch (FieldNotFound fieldNotFound) {
             fieldNotFound.printStackTrace();
         }
+        System.out.println("ExecutorApplication -> BanzaiApplication (Outgoing) " +
+                "quickfix Quote \n" + quote);
 
         sendMessage(sessionID,quote);
+
     }
 
     private boolean isOrderExecutable(Message order, Price price) throws FieldNotFound {

@@ -29,9 +29,10 @@ import quickfix.examples.banzai.restapi.App;
 import quickfix.examples.banzai.ui.BanzaiFrame;
 
 import javax.swing.*;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Entry point for the Banzai application.
@@ -44,6 +45,8 @@ public class Banzai {
     private boolean initiatorStarted = false;
     private Initiator initiator = null;
     private JFrame frame = null;
+    private BlockingQueue<quickfix.examples.banzai.restapi.message.Message> restMsgQueue;
+    private BlockingQueue<quickfix.Message> fixMsgQueue;
 
     public Banzai(String[] args) throws Exception {
         InputStream inputStream = null;
@@ -63,7 +66,18 @@ public class Banzai {
 
         OrderTableModel orderTableModel = new OrderTableModel();
         ExecutionTableModel executionTableModel = new ExecutionTableModel();
-        BanzaiApplication application = new BanzaiApplication(orderTableModel, executionTableModel);
+
+        File logFile = new File("/home/george/Priya/RestFix.log");
+        logFile.createNewFile();
+        FileWriter fileWriter = new FileWriter(logFile);
+        PrintWriter printWriter = new PrintWriter(fileWriter);
+        printWriter.println("Starting new demo\n................. ");
+
+        restMsgQueue = new LinkedBlockingQueue<quickfix.examples.banzai.restapi.message.Message>(10);
+        fixMsgQueue = new LinkedBlockingQueue<quickfix.Message>(10);
+        BanzaiApplication application = new BanzaiApplication(orderTableModel, executionTableModel,
+                restMsgQueue,fixMsgQueue,printWriter);
+
         MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
         LogFactory logFactory = new ScreenLogFactory(true, true, true, logHeartbeats);
         MessageFactory messageFactory = new DefaultMessageFactory();
@@ -77,7 +91,16 @@ public class Banzai {
         frame = new BanzaiFrame(orderTableModel, executionTableModel, application);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        App.start(application);
+
+        App restServer = new App(restMsgQueue,fixMsgQueue,printWriter);
+        Thread restServerThread = new Thread(restServer);
+        restServerThread.start();
+
+        Thread restMsgQueueReader = new Thread(new RestMsgQueueReader(application));
+        restMsgQueueReader.start();
+
+
+
     }
 
     public synchronized void logon() {
@@ -85,6 +108,7 @@ public class Banzai {
             try {
                 initiator.start();
                 initiatorStarted = true;
+
             } catch (Exception e) {
                 log.error("Logon failed", e);
             }

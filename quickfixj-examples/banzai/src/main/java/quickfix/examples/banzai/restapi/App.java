@@ -2,8 +2,12 @@ package quickfix.examples.banzai.restapi;
 
 import quickfix.SessionID;
 import quickfix.examples.banzai.*;
-import quickfix.examples.banzai.bean.MarketOrder;
+import quickfix.examples.banzai.restapi.message.MarketOrder;
+import quickfix.examples.banzai.restapi.message.Message;
 import spark.Request;
+
+import java.io.PrintWriter;
+import java.util.concurrent.BlockingQueue;
 
 import static spark.Spark.get;
 import static spark.Spark.post;
@@ -12,21 +16,35 @@ import static spark.Spark.post;
  * Hello world!
  *
  */
-public class App 
+public class App implements Runnable
 {
-    public static void start( final BanzaiApplication application)
+    private BlockingQueue<Message> restMsgQueue;
+    private BlockingQueue<quickfix.Message> fixMsgQueue;
+
+    private PrintWriter printWriter;
+
+    public App(BlockingQueue<Message> restMsgQueue, BlockingQueue<quickfix.Message> fixMsgQueue,
+               PrintWriter printWriter) {
+        this.restMsgQueue = restMsgQueue;
+        this.fixMsgQueue = fixMsgQueue;
+        this.printWriter = printWriter;
+    }
+
+    @Override
+    public void run()
     {
-        System.out.println( "Hello World ing!" );
-       post("/api/v1/accounts/marketorder", "application/json",(request, response) -> {
+        post("/api/v1/accounts/marketorder", "application/json",(request, response) -> {
 
            String orderId = request.queryMap("orderId").value();
-           application.startRFQ(getSessionId(), getMarketOrder(request));
+           printWriter.println("RESTServer -> BanzaiApplication (Outgoing) restMsg MarketOrder \n\n");
+           restMsgQueue.put(getMarketOrder(request));
+           quickfix.fix43.Quote quote = (quickfix.fix43.Quote )fixMsgQueue.take();
+           printWriter.println("BanzaiApplication -> RESTServer (Incoming) quickfix Quote \n" + quote + "\n\n");
+           printWriter.println("RESTServer -> RESTClient (Outgoing)  quickfix Quote \n" + quote+ "\n\n");
 
-           return "{\"OrderId\": \""+ orderId +"\"," +
-           "\"Status\": \"P\", \"Text\": \"\"}";
-       }
-
-        );
+            printWriter.close();
+           return quote;
+        },new JsonTransformer());
 
         get("/posts", (req, res) -> {
 
@@ -35,15 +53,8 @@ public class App
 
 
         get("/uurs", (req, res) -> {
-
             Order order = getOrder();
-
-            System.out.println(" get uurs ");
-            //application.send(order);
-            /*application.sendQuoteReq(new SessionID("FIX.4.3", "BANZAI", "",
-                    "", "EXEC", "",
-                    "", ""));*/
-
+            printWriter.println(" get uurs ");
             return "Hello uurs World!";
         });
 
@@ -82,4 +93,6 @@ public class App
         order.setSessionID(getSessionId());
         return order;
     }
+
+
 }

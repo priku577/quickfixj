@@ -1,6 +1,6 @@
-package quickfix.examples.banzai.bean;
+package quickfix.examples.banzai.restapi.message;
 
-public class MarketOrder {
+public class MarketOrder implements Message {
 
     public MarketOrder(String fromCurrency, String toCurrency, Double amount) {
         this.fromCurrency = fromCurrency;
@@ -13,4 +13,8 @@ public class MarketOrder {
     public Double amount;
 
 
+    @Override
+    public Type getType() {
+        return Type.QuoteRequest;
+    }
 }

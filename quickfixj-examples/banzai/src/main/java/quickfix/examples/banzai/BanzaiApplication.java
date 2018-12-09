@@ -21,16 +21,18 @@ package quickfix.examples.banzai;
 
 
 import quickfix.*;
-import quickfix.examples.banzai.bean.MarketOrder;
+import quickfix.examples.banzai.restapi.message.MarketOrder;
+import quickfix.examples.banzai.restapi.message.Type;
 import quickfix.field.*;
 import quickfix.fix43.QuoteRequest;
 
-import javax.swing.*;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.BlockingQueue;
 
 public class BanzaiApplication extends quickfix.MessageCracker implements Application {
     private final DefaultMessageFactory messageFactory = new DefaultMessageFactory();
@@ -46,10 +48,20 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
     static private final TwoWayMap tifMap = new TwoWayMap();
     static private final HashMap<SessionID, HashSet<ExecID>> execIDs = new HashMap<>();
 
+    private BlockingQueue<quickfix.examples.banzai.restapi.message.Message> restMsgQueue;
+    private BlockingQueue<quickfix.Message> fixMsgQueue;
+
+    private PrintWriter printWriter;
+
     public BanzaiApplication(OrderTableModel orderTableModel,
-            ExecutionTableModel executionTableModel) {
+            ExecutionTableModel executionTableModel,
+                             BlockingQueue<quickfix.examples.banzai.restapi.message.Message> restMsgQueue,
+                             BlockingQueue<quickfix.Message> fixMsgQueue, PrintWriter printWriter) {
         this.orderTableModel = orderTableModel;
         this.executionTableModel = executionTableModel;
+        this.restMsgQueue = restMsgQueue;
+        this.fixMsgQueue = fixMsgQueue;
+        this.printWriter = printWriter;
     }
 
     public void onCreate(SessionID sessionID) {
@@ -76,7 +88,8 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
     public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound,
             IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         try {
-            SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
+            //SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
+
             crack(message, sessionID);
 
         } catch (Exception e) {
@@ -84,7 +97,37 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
     }
 
     public void onMessage(quickfix.fix43.Quote quote, SessionID sessionID) {
-        System.out.println("onMessage Quote");
+        printWriter.println("ExecutorApplication -> BanzaiApplication (Incoming) quickfix Quote\n" + quote + "\n");
+        try {
+            printWriter.println("BanzaiApplication -> RESTServer (Outgoing) quickfix Quote\n" + quote + "\n\n");
+            fixMsgQueue.put(quote);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void listenToRestMsgQueue() {
+
+        while(true){
+            try {
+                SessionID sessionId = new SessionID("FIX.4.3", "BANZAI", "",
+                        "", "EXEC", "",
+                        "", "");
+                while (true) {
+                    quickfix.examples.banzai.restapi.message.Message msg = restMsgQueue.take();
+                    printWriter.println("RESTServer -> RESTMsgQueueReader (Incoming) restMessage MarketOrder \n");
+                    if(msg.getType() ==Type.QuoteRequest){
+                        QuoteRequest quoteReq = getQuoteRequest((MarketOrder) msg);
+                        send(quoteReq, sessionId);
+
+                        printWriter.println("RESTMsgQueueReader -> ExecutorApplication (Outgoing) " +
+                                "quickfix QuoteRequest \n" + quoteReq+ "\n");
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public class MessageProcessor implements Runnable {
@@ -108,7 +151,7 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
                         // This is here to support OpenFIX certification
                         sendSessionReject(message, SessionRejectReason.COMPID_PROBLEM);
                     } else if (message.getHeader().getField(msgType).valueEquals("8")) {
-                        System.out.println("message processor.run()");
+
                         executionReport(message, sessionID);
                     } else if (message.getHeader().getField(msgType).valueEquals("9")) {
                         cancelReject(message, sessionID);
@@ -263,7 +306,7 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
         try {
             Session.sendToTarget(message, sessionID);
         } catch (SessionNotFound e) {
-            System.out.println(e);
+            printWriter.println(e);
         }
     }
 
