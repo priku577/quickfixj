@@ -19,9 +19,13 @@
 
 package quickfix.examples.banzai;
 
-import quickfix.*;
-import quickfix.field.*;
 
+import quickfix.*;
+import quickfix.examples.banzai.bean.MarketOrder;
+import quickfix.field.*;
+import quickfix.fix43.QuoteRequest;
+
+import javax.swing.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,8 +76,9 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
     public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound,
             IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         try {
-            //SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
+            SwingUtilities.invokeLater(new MessageProcessor(message, sessionID));
             crack(message, sessionID);
+
         } catch (Exception e) {
         }
     }
@@ -103,6 +108,7 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
                         // This is here to support OpenFIX certification
                         sendSessionReject(message, SessionRejectReason.COMPID_PROBLEM);
                     } else if (message.getHeader().getField(msgType).valueEquals("8")) {
+                        System.out.println("message processor.run()");
                         executionReport(message, sessionID);
                     } else if (message.getHeader().getField(msgType).valueEquals("9")) {
                         cancelReject(message, sessionID);
@@ -341,24 +347,18 @@ public class BanzaiApplication extends quickfix.MessageCracker implements Applic
         send(populateOrder(order, newOrderSingle), order.getSessionID());
     }
 
-    public void sendQuoteReq(SessionID sessionId) {
-
-
-        quickfix.fix43.QuoteRequest quoteReq = new quickfix.fix43.QuoteRequest(new quickfix.field.QuoteReqID("12345"));
-
-       // quoteReq.set(new quickfix.field.NoRelatedSym(1));
-
-        quickfix.fix43.QuoteRequest.NoRelatedSym noRelatedSym = new quickfix.fix43.QuoteRequest.NoRelatedSym();
-        noRelatedSym.set(new Symbol("EUR/USD"));
-        noRelatedSym.set(new OrderQty(1000));
-       // noRelatedSym.set(new Currency("EUR"));
-
-        quoteReq.addGroup(noRelatedSym);
-
-
-
-
+    public void startRFQ(SessionID sessionId, MarketOrder marketOrder) {
+        QuoteRequest quoteReq = getQuoteRequest(marketOrder);
         send(quoteReq, sessionId);
+    }
+
+    private QuoteRequest getQuoteRequest(MarketOrder marketOrder) {
+        QuoteRequest quoteReq = new QuoteRequest(new QuoteReqID("1001"));
+        QuoteRequest.NoRelatedSym noRelatedSym = new QuoteRequest.NoRelatedSym();
+        noRelatedSym.set(new Symbol(String.join("/",marketOrder.fromCurrency,marketOrder.toCurrency)));
+        noRelatedSym.set(new OrderQty(marketOrder.amount));
+        quoteReq.addGroup(noRelatedSym);
+        return quoteReq;
     }
 
     public quickfix.Message populateOrder(Order order, quickfix.Message newOrderSingle) {

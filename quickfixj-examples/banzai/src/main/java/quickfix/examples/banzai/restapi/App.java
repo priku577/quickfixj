@@ -2,8 +2,11 @@ package quickfix.examples.banzai.restapi;
 
 import quickfix.SessionID;
 import quickfix.examples.banzai.*;
+import quickfix.examples.banzai.bean.MarketOrder;
+import spark.Request;
 
 import static spark.Spark.get;
+import static spark.Spark.post;
 
 /**
  * Hello world!
@@ -14,10 +17,22 @@ public class App
     public static void start( final BanzaiApplication application)
     {
         System.out.println( "Hello World ing!" );
-       get("/posts", (req, res) -> {
+       post("/api/v1/accounts/marketorder", "application/json",(request, response) -> {
+
+           String orderId = request.queryMap("orderId").value();
+           application.startRFQ(getSessionId(), getMarketOrder(request));
+
+           return "{\"OrderId\": \""+ orderId +"\"," +
+           "\"Status\": \"P\", \"Text\": \"\"}";
+       }
+
+        );
+
+        get("/posts", (req, res) -> {
 
             return "Hello Sparkinglys World!";
         });
+
 
         get("/uurs", (req, res) -> {
 
@@ -25,13 +40,26 @@ public class App
 
             System.out.println(" get uurs ");
             //application.send(order);
-            application.sendQuoteReq(new SessionID("FIX.4.3", "BANZAI", "",
+            /*application.sendQuoteReq(new SessionID("FIX.4.3", "BANZAI", "",
                     "", "EXEC", "",
-                    "", ""));
+                    "", ""));*/
 
             return "Hello uurs World!";
         });
 
+
+    }
+
+    private static MarketOrder getMarketOrder(Request request) {
+        return new MarketOrder(request.queryMap("FromCurrency").value(),
+                       request.queryMap("ToCurrency").value(),
+                       Double.parseDouble(request.queryMap("Amount").value()));
+    }
+
+    private static SessionID getSessionId() {
+        return new SessionID("FIX.4.3", "BANZAI", "",
+                "", "EXEC", "",
+                "", "");
     }
 
     private static Order getOrder() {
@@ -51,9 +79,7 @@ public class App
             order.setStop("");
 
 
-        order.setSessionID(new SessionID("FIX.4.3", "BANZAI", "",
-                "", "EXEC", "",
-                "", ""));
+        order.setSessionID(getSessionId());
         return order;
     }
 }
